@@ -1,0 +1,72 @@
+# Node.js dependencies
+node_modules/
+frontend/node_modules/
+
+# Build outputs
+build/
+dist/
+out/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Version control
+.git/
+.gitignore
+.svn/
+.hg/
+
+# Environment and secrets
+.env*
+*.env
+*.pem
+*.key
+*.crt
+config.local.*
+*.local.yml
+
+# Temporary and cache files
+*.tmp
+tmp/
+temp/
+.DS_Store
+
+# Test and debug files
+test/
+tests/
+debug/
+*.log
+
+# Documentation
+README*
+*.md
+docs/
+
+# Project-specific
+local/
+.local/
+
+# Miscellaneous
+*.coverage
+
+# Ignore photos and other unnecessary assets
+src/config/Photos of Seminar halls/
+
+# Ignore public assets except .gitkeep
+src/public/
+frontend/public/
+
+# Ignore migration files if not needed in build
+src/migrations/
+
+# Ignore Docker files (if present)
+Dockerfile*
+docker-compose*
+
+# Exclude lock files from ignore (as per instructions)
+# (Do NOT add package-lock.json, yarn.lock, etc.)
+
+# End of .dockerignore

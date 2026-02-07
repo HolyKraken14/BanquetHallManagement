@@ -1,0 +1,51 @@
+services:
+  js-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:7002
+    ports:
+      - "5173:5173"  # Vite preview port
+    restart: unless-stopped
+    init: true
+    environment:
+      - VITE_API_URL=http://localhost:7002
+    networks:
+      - appnet
+    depends_on:
+      - js-src  # Ensure backend is up before frontend
+
+  js-src:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "7002:7002"  # Backend API port
+    restart: unless-stopped
+    init: true
+    # env_file: ./src/.env  # Uncomment if .env file exists
+    environment:
+      - DB_URL=mongodb://mongo:27017/native
+      - JWT_SECRET=change_me_development_secret
+    networks:
+      - appnet
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge
+
+volumes:
+  mongo-data:

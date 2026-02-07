@@ -4,7 +4,7 @@ const SeminarHall = require("../models/seminarHallModel");
 const updateSeminarHalls = async () => {
   try {
     // Use your actual database name here
-    const dbUrl = "mongodb://localhost:27017/test"; // or whatever your db name is
+    const dbUrl = "mongodb://localhost:27017/native"; // or whatever your db name is
     await mongoose.connect(dbUrl);
     console.log("Connected to MongoDB");
 

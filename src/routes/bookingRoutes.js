@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const SeminarHall = require("../models/seminarHallModel");
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+const BanquetHall = require("../models/banquetHallModel");
 const Booking = require("../models/bookingModel");
 const User = require("../models/userModel");
 const Notification = require("../models/notificationModel");
@@ -21,16 +23,28 @@ router.post("/book", async (req, res) => {
     equipmentRequest,
     eventCoordinators, // Collecting event coordinators
     specialEquipmentRequests,
+    pax,
+    foodRequired,
+    costPerPlate,
+    additionalDetails,
   } = req.body;
 
   if (!seminarHallId || !userId || !bookingDate || !startTime || !endTime || !eventName || !eventDetails) {
     return res.status(400).json({ message: 'Missing required fields' });
   }
 
-  // Validate if the seminar hall exists
-  const seminarHall = await SeminarHall.findById(seminarHallId);
-  if (!seminarHall) {
-    return res.status(404).json({ message: "Seminar hall not found" });
+  // Banquet validations
+  if (pax === undefined || pax === null || Number(pax) <= 0) {
+    return res.status(400).json({ message: 'Invalid number of pax' });
+  }
+  if (foodRequired === true && (costPerPlate === undefined || Number(costPerPlate) < 0)) {
+    return res.status(400).json({ message: 'Invalid cost per plate' });
+  }
+
+  // Validate if the hall exists
+  const hall = await BanquetHall.findById(seminarHallId);
+  if (!hall) {
+    return res.status(404).json({ message: "Hall not found" });
   }
 
   // Validate if the user exists
@@ -39,7 +53,7 @@ router.post("/book", async (req, res) => {
     return res.status(404).json({ message: "User not found" });
   }
 
-  // Check for conflicting bookings in the seminar hall for the given date and time
+  // Check for conflicting bookings in the hall for the given date and time
   const existingBooking = await Booking.findOne({
     seminarHallId,
     bookingDate,
@@ -52,7 +66,7 @@ router.post("/book", async (req, res) => {
   }
 
   if (existingBooking) {
-    return res.status(400).json({ message: "Seminar hall is already booked for this time" });
+    return res.status(400).json({ message: "Hall is already booked for this time" });
   }
 
   // Create new booking with initial status 'pending'
@@ -66,6 +80,10 @@ router.post("/book", async (req, res) => {
     eventDetails,
     eventCoordinators, // Include event coordinators
     specialEquipmentRequests,
+    pax: Number(pax),
+    foodRequired: Boolean(foodRequired),
+    costPerPlate: foodRequired ? Number(costPerPlate) : undefined,
+    additionalDetails: additionalDetails || '',
     status: "pending",  // Initial status set to pending
   });
 
@@ -119,6 +137,7 @@ router.patch(
   "/:bookingId/approve/admin",
   verifyToken,
   authorizeRoles("admin"),
+  upload.single('quotation'),
   async (req, res) => {
     const { bookingId } = req.params;
 
@@ -139,6 +158,7 @@ router.patch(
       }
 
       let coordinatorName = "Event Coordinator";
+      let coordinatorEmail;
       // Get the user's email from the booking's eventCoordinators
       if (booking.eventCoordinators && booking.eventCoordinators.length > 0) {
         coordinatorName = booking.eventCoordinators[0].name || "Event Coordinator";
@@ -155,19 +175,34 @@ router.patch(
       }
 
       // Prepare email content
+      const attachments = [];
+      if (req.file) {
+        // Only accept PDFs
+        if (req.file.mimetype !== 'application/pdf') {
+          return res.status(400).json({ message: 'Only PDF files are allowed for quotation attachment.' });
+        }
+        attachments.push({
+          filename: req.file.originalname || 'quotation.pdf',
+          content: req.file.buffer,
+          contentType: req.file.mimetype,
+        });
+      }
+
       const emailContent = {
         to: coordinatorEmail,
-        subject: "Seminar Hall Booking Approved",
+        subject: "Banquet Hall Booking Approved",
         text: `Dear ${coordinatorName},
 
-Your booking for the seminar hall has been approved.
+Your banquet hall booking has been approved.
 Booking Details:
 - Event: ${booking.eventName}
 - Date: ${new Date(booking.bookingDate).toLocaleDateString()}
 - Time: ${booking.startTime} - ${booking.endTime}
 ${booking.specialEquipmentRequests ? `\nSpecial Equipment Requests:\n${booking.specialEquipmentRequests}` : ''}
+${attachments.length ? '\nA quotation PDF is attached to this email.' : ''}
 
-Thank you.`
+Thank you.`,
+        attachments,
       };
 
       // Send email
@@ -384,9 +419,9 @@ router.patch(
       // Prepare email content
       const emailContent = {
         to: coordinatorEmail,
-        subject: "Seminar Hall Booking Rejected",
+        subject: "Banquet Hall Booking Rejected",
         text: `Dear ${coordinatorName},
-Your booking for seminar hall has been rejected. 
+Your banquet hall booking has been rejected.
 Booking Details:
 - Event: ${booking.eventName}
 - Date: ${new Date(booking.bookingDate).toLocaleDateString()}
@@ -470,9 +505,9 @@ router.patch(
       // Prepare email content
       const emailContent = {
         to: coordinatorEmail,
-        subject: "Seminar Hall Booking Rejected",
+        subject: "Banquet Hall Booking Rejected",
         text: `Dear ${coordinatorName},
-Your booking for seminar hall has been rejected. 
+Your banquet hall booking has been rejected.
 Booking Details:
 - Event: ${booking.eventName}
 - Date: ${new Date(booking.bookingDate).toLocaleDateString()}
@@ -553,10 +588,10 @@ router.delete("/:id", verifyToken, async (req, res) => {
       if (coordinatorEmail) {
         const emailContent = {
           to: coordinatorEmail,
-          subject: "Booking Cancelled",
+          subject: "Banquet Hall Booking Cancelled",
           text: `Dear ${coordinatorName},
 
-Your booking for the seminar hall has been cancelled.
+Your banquet hall booking has been cancelled.
 Booking Details:
 - Event: ${booking.eventName}
 - Date: ${new Date(booking.bookingDate).toLocaleDateString()}
@@ -598,6 +633,10 @@ router.patch("/:id", verifyToken, async (req, res) => {
       eventName,
       eventDetails,
       eventCoordinators,
+      pax,
+      foodRequired,
+      costPerPlate,
+      additionalDetails,
     } = req.body;
 
     // Find the booking
@@ -636,6 +675,14 @@ router.patch("/:id", verifyToken, async (req, res) => {
       return res.status(400).json({message:"Invalid Time Slot"})
     }
 
+    // Banquet validations (if provided)
+    if (pax !== undefined && (Number(pax) <= 0)) {
+      return res.status(400).json({ message: "Invalid number of pax" });
+    }
+    if (foodRequired === true && (costPerPlate === undefined || Number(costPerPlate) < 0)) {
+      return res.status(400).json({ message: "Invalid cost per plate" });
+    }
+
     // Update the booking
     booking.bookingDate = bookingDate;
     booking.startTime = startTime;
@@ -643,6 +690,14 @@ router.patch("/:id", verifyToken, async (req, res) => {
     booking.eventName = eventName;
     booking.eventDetails = eventDetails;
     booking.eventCoordinators = eventCoordinators;
+    if (pax !== undefined) booking.pax = Number(pax);
+    if (foodRequired !== undefined) booking.foodRequired = Boolean(foodRequired);
+    if (foodRequired) {
+      booking.costPerPlate = Number(costPerPlate);
+    } else if (foodRequired === false) {
+      booking.costPerPlate = undefined;
+    }
+    if (additionalDetails !== undefined) booking.additionalDetails = additionalDetails;
     // Reset status to pending if it was approved by manager
     if (booking.status === "approved_by_manager") {
       booking.status = "pending";

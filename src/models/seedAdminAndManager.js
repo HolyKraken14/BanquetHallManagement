@@ -5,13 +5,13 @@ const seedAdminAndManager = async () => {
   const users = [
     {
       username: 'admin',
-      email: 'admin@rvce.edu.in',
+      email: 'admin@nativehotels.co.in',
       password: 'admin123', // Use strong passwords in production
       role: 'admin',
     },
     {
       username: 'manager',
-      email: 'manager@rvce.edu.in',
+      email: 'manager@nativehotels.co.in',
       password: 'manager123', // Use strong passwords in production
       role: 'manager',
     },

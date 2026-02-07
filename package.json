@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
+    "seed:banquet": "node -e \"require('./src/config/seedBanquetHall')()\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

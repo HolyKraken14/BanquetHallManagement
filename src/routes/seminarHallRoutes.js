@@ -1,13 +1,12 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const SeminarHall = require("../models/seminarHallModel");
+const BanquetHall = require("../models/banquetHallModel");
 const router = express.Router();
-const seedDatabase = require("../config/seedSeminarHall");
 // Get all seminar halls
 router.get("/", async (req, res) => {
   try {
-    const seminarHalls = await SeminarHall.find();
-    res.json(seminarHalls);
+    const halls = await BanquetHall.find();
+    res.json(halls);
   } catch (err) {
     res.status(500).json({ message: "Error fetching seminar halls", error: err });
   }
@@ -18,13 +17,13 @@ router.get("/:id", async (req, res) => {
   try {
     const hallId = req.params.id;
 
-    const hall = await SeminarHall.findById(hallId);
+    const hall = await BanquetHall.findById(hallId);
 
     if (!hall) {
       return res.status(404).json({ message: "Seminar hall not found" });
     }
 
-    const halls = await SeminarHall.find();
+    const halls = await BanquetHall.find();
     const displayId = halls.findIndex((h) => h._id.toString() === hall._id.toString()) + 1;
 
     const hallWithDisplayId = {
@@ -42,15 +41,15 @@ router.get("/:id", async (req, res) => {
 // Get seminar halls with specific equipment condition (optional)
 router.get("/equipment/:condition", async (req, res) => {
   try {
-    const seminarHalls = await SeminarHall.find({
+    const halls = await BanquetHall.find({
       "equipment.condition": req.params.condition,
     });
-    if (!seminarHalls.length) {
-      return res.status(404).json({ message: "No seminar halls found with this equipment condition" });
+    if (!halls.length) {
+      return res.status(404).json({ message: "No halls found with this equipment condition" });
     }
-    res.json(seminarHalls);
+    res.json(halls);
   } catch (err) {
-    res.status(500).json({ message: "Error fetching seminar halls by equipment condition", error: err });
+    res.status(500).json({ message: "Error fetching halls by equipment condition", error: err });
   }
 });
 
@@ -74,7 +73,7 @@ router.patch('/:hallId/equipment/:equipmentId', async (req, res) => {
         }
 
         // Find and update the equipment status
-        const hall = await SeminarHall.findOneAndUpdate(
+        const hall = await BanquetHall.findOneAndUpdate(
             {
                 _id: hallId,
                 'equipment._id': equipmentId
@@ -93,7 +92,7 @@ router.patch('/:hallId/equipment/:equipmentId', async (req, res) => {
         if (!hall) {
             return res.status(404).json({ 
                 success: false, 
-                message: 'Seminar hall or equipment not found' 
+                message: 'Hall or equipment not found' 
             });
         }
 
@@ -124,9 +123,9 @@ router.patch("/:id/availability", async (req, res) => {
     const { isAvailable, unavailabilityReason } = req.body;
     const hallId = req.params.id;
 
-    const hall = await SeminarHall.findById(hallId);
+    const hall = await BanquetHall.findById(hallId);
     if (!hall) {
-      return res.status(404).json({ message: "Seminar hall not found" });
+      return res.status(404).json({ message: "Hall not found" });
     }
 
     hall.isAvailable = isAvailable;
@@ -134,11 +133,11 @@ router.patch("/:id/availability", async (req, res) => {
     await hall.save();
 
     res.status(200).json({
-      message: `Seminar hall ${isAvailable ? 'enabled' : 'disabled'} successfully`,
+      message: `Hall ${isAvailable ? 'enabled' : 'disabled'} successfully`,
       hall
     });
   } catch (err) {
-    res.status(500).json({ message: "Error updating seminar hall availability", error: err.message });
+    res.status(500).json({ message: "Error updating hall availability", error: err.message });
   }
 });
 

@@ -6,15 +6,23 @@ const authRoutes=require("./routes/authRoutes");
 const userRoutes=require("./routes/userRoutes");
 const seminarHallRoutes = require("./routes/seminarHallRoutes");
 const seedAdminAndManager = require('./models/seedAdminAndManager');
+const seedBanquet = require('./config/seedBanquetHall');
 const bookingRoutes = require("./routes/bookingRoutes");
 
 const cors=require("cors");
 dbConnect();
 seedAdminAndManager();
+// Seed banquet halls on startup
+seedBanquet();
 const app=express();
 
 app.use(express.json());
 app.use(cors());
+
+// Serve images as static files
+const path = require('path');
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
+
 app.use("/api/auth",authRoutes);
 app.use("/api/users",userRoutes);
 app.use("/api/seminar-halls",seminarHallRoutes);
